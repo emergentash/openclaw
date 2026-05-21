@@ -1137,8 +1137,10 @@ function collectAttemptExplicitToolAllowlistSources(params: {
   senderE164?: string | null;
   sandboxToolPolicy?: { allow?: string[]; deny?: string[] };
   toolsAllow?: string[];
+  effectiveToolPolicy?: ReturnType<typeof resolveEffectiveToolPolicy>;
 }) {
-  const { agentId, globalPolicy, globalProviderPolicy, agentPolicy, agentProviderPolicy } =
+  const effectiveToolPolicy =
+    params.effectiveToolPolicy ??
     resolveEffectiveToolPolicy({
       config: params.config,
       sessionKey: params.sessionKey,
@@ -1146,6 +1148,8 @@ function collectAttemptExplicitToolAllowlistSources(params: {
       modelProvider: params.modelProvider,
       modelId: params.modelId,
     });
+  const { agentId, globalPolicy, globalProviderPolicy, agentPolicy, agentProviderPolicy } =
+    effectiveToolPolicy;
   const groupPolicy = resolveGroupToolPolicy({
     config: params.config,
     sessionKey: params.sessionKey,
@@ -2028,6 +2032,9 @@ export async function runEmbeddedAttempt(
       senderE164: params.senderE164,
       sandboxToolPolicy: sandbox?.tools,
       toolsAllow: params.toolsAllow,
+      ...(constructionEffectiveToolPolicy
+        ? { effectiveToolPolicy: constructionEffectiveToolPolicy }
+        : {}),
     });
     const toolSearchRunPlan = buildToolSearchRunPlan({
       visibleTools: effectiveTools,
