@@ -1997,6 +1997,18 @@ export async function runEmbeddedAttempt(
       );
     }
     prepStages.mark("bundle-tools");
+    const systemPromptStages = createEmbeddedRunStageTracker({
+      onMark: (stage) =>
+        emitEmbeddedAttemptStageMark({
+          config: params.config,
+          group: "system-prompt",
+          stage,
+          trigger: params.trigger,
+          provider: params.provider,
+          modelId: params.modelId,
+          messageChannel: params.messageChannel ?? params.messageProvider,
+        }),
+    });
     const explicitToolAllowlistSources = collectAttemptExplicitToolAllowlistSources({
       config: params.config,
       sessionKey: params.sessionKey,
@@ -2029,6 +2041,7 @@ export async function runEmbeddedAttempt(
         : undefined,
       explicitAllowlistSources: explicitToolAllowlistSources,
     });
+    systemPromptStages.mark("tool-run-plan");
     const allowedToolNames = toolSearchRunPlan.visibleAllowedToolNames;
     const replayAllowedToolNames = toolSearchRunPlan.replayAllowedToolNames;
     const emptyExplicitToolAllowlistError = buildEmptyExplicitToolAllowlistError({
@@ -2048,6 +2061,7 @@ export async function runEmbeddedAttempt(
       modelApi: params.model.api,
       model: params.model,
     });
+    systemPromptStages.mark("tool-diagnostics");
 
     const machineName = await getMachineDisplayName();
     const runtimeChannel = normalizeMessageChannel(params.messageChannel ?? params.messageProvider);
@@ -2073,6 +2087,7 @@ export async function runEmbeddedAttempt(
       modelApi: params.model.api,
       model: params.model,
     });
+    systemPromptStages.mark("runtime-facts");
     // Resolve channel-specific message actions for system prompt
     const channelActions = runtimeChannel
       ? listChannelSupportedActions(
@@ -2098,6 +2113,7 @@ export async function runEmbeddedAttempt(
           accountId: params.agentAccountId,
         })
       : undefined;
+    systemPromptStages.mark("channel-guidance");
 
     const defaultModelRef = resolveDefaultModelForAgent({
       cfg: params.config ?? {},
@@ -2146,18 +2162,7 @@ export async function runEmbeddedAttempt(
       minimalPromptForTools,
       skillsPrompt,
     });
-    const systemPromptStages = createEmbeddedRunStageTracker({
-      onMark: (stage) =>
-        emitEmbeddedAttemptStageMark({
-          config: params.config,
-          group: "system-prompt",
-          stage,
-          trigger: params.trigger,
-          provider: params.provider,
-          modelId: params.modelId,
-          messageChannel: params.messageChannel ?? params.messageProvider,
-        }),
-    });
+    systemPromptStages.mark("prompt-params");
     const openClawReferences = await resolveOpenClawReferencePaths({
       workspaceDir: effectiveWorkspace,
       argv1: process.argv[1],
