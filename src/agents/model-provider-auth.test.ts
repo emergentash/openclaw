@@ -7,8 +7,23 @@ const modelCatalogMocks = vi.hoisted(() => ({
 }));
 
 const modelAuthMocks = vi.hoisted(() => ({
+  createRuntimeProviderAuthLookup: vi.fn(() => ({
+    envApiKey: {
+      aliasMap: {},
+      candidateMap: {},
+      authEvidenceMap: {},
+    },
+    syntheticAuthProviderRefs: [],
+  })),
   hasRuntimeAvailableProviderAuth:
-    vi.fn<(params: { provider: string; cfg?: OpenClawConfig; workspaceDir?: string }) => boolean>(),
+    vi.fn<
+      (params: {
+        provider: string;
+        cfg?: OpenClawConfig;
+        workspaceDir?: string;
+        runtimeLookup?: unknown;
+      }) => boolean
+    >(),
 }));
 
 const authProfilesMocks = vi.hoisted(() => ({
@@ -24,6 +39,7 @@ vi.mock("./model-catalog.js", () => ({
 }));
 
 vi.mock("./model-auth.js", () => ({
+  createRuntimeProviderAuthLookup: modelAuthMocks.createRuntimeProviderAuthLookup,
   hasRuntimeAvailableProviderAuth: modelAuthMocks.hasRuntimeAvailableProviderAuth,
 }));
 
